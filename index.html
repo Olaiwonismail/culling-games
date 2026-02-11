@@ -1,92 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="A sleek, modern Snake game built with HTML5 Canvas and JavaScript.">
-  <title>Snake Game</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A sleek, modern Snake game built with HTML5 Canvas and JavaScript.">
+    <title>Snake Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <div class="game-wrapper">
-    <!-- Background glow effects -->
-    <div class="bg-glow bg-glow-1"></div>
-    <div class="bg-glow bg-glow-2"></div>
+    <div class="game-wrapper">
+        <!-- Background glow effects -->
+        <div class="bg-glow bg-glow-1"></div>
+        <div class="bg-glow bg-glow-2"></div>
 
-    <header class="game-header">
-      <h1>SNAKE</h1>
-      <p class="subtitle">Classic Arcade Reimagined</p>
-    </header>
+        <header class="game-header">
+            <h1>SNAKE</h1>
+            <p class="subtitle">Classic Arcade Reimagined</p>
+        </header>
 
-    <div class="stats-bar">
-      <div class="stat-card">
-        <span class="stat-label">SCORE</span>
-        <span class="stat-value" id="score">0</span>
-      </div>
-      <div class="stat-card best-card">
-        <span class="stat-label">BEST</span>
-        <span class="stat-value" id="highScore">0</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">LENGTH</span>
-        <span class="stat-value" id="snakeLength">3</span>
-      </div>
-    </div>
-
-    <div class="canvas-container">
-      <canvas id="gameCanvas"></canvas>
-      <div class="game-overlay" id="gameOverlay">
-        <div class="overlay-content">
-          <div class="overlay-icon" id="overlayIcon">🐍</div>
-          <h2 id="overlayTitle">Ready to Play?</h2>
-          <p id="overlayMessage">Use arrow keys or WASD to move</p>
-          <button class="play-btn" id="playBtn">
-            <span>PLAY</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M8 5v14l11-7z" fill="currentColor"/>
-            </svg>
-          </button>
+        <div class="stats-bar">
+            <div class="stat-card">
+                <span class="stat-label">SCORE</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-card best-card">
+                <span class="stat-label">BEST</span>
+                <span class="stat-value" id="highScore">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">LENGTH</span>
+                <span class="stat-value" id="snakeLength">3</span>
+            </div>
         </div>
-      </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+            <!-- Swipe direction feedback -->
+            <div class="swipe-indicator" id="swipeIndicator">
+                <svg width="48" height="48" viewBox="0 0 24 24">
+                    <path d="M12 4l-8 8h16z" fill="currentColor" />
+                </svg>
+            </div>
+            <div class="game-overlay" id="gameOverlay">
+                <div class="overlay-content">
+                    <div class="overlay-icon" id="overlayIcon">🐍</div>
+                    <h2 id="overlayTitle">Ready to Play?</h2>
+                    <p id="overlayMessage" class="desktop-msg">Use arrow keys or WASD to move</p>
+                    <p id="overlayMessageMobile" class="mobile-msg">Swipe to move</p>
+                    <button class="play-btn" id="playBtn">
+                        <span>PLAY</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M8 5v14l11-7z" fill="currentColor" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile: Difficulty + Swipe Hint -->
+        <div class="mobile-section" id="mobileSection">
+            <div class="mobile-difficulty">
+                <span class="mobile-diff-label">DIFFICULTY</span>
+                <div class="mobile-diff-options">
+                    <button class="mobile-diff-btn" data-speed="slow">
+                        <span class="diff-emoji">🐢</span>
+                        <span class="diff-name">Easy</span>
+                    </button>
+                    <button class="mobile-diff-btn active" data-speed="normal">
+                        <span class="diff-emoji">⚡</span>
+                        <span class="diff-name">Normal</span>
+                    </button>
+                    <button class="mobile-diff-btn" data-speed="fast">
+                        <span class="diff-emoji">🔥</span>
+                        <span class="diff-name">Hard</span>
+                    </button>
+                </div>
+            </div>
+            <div class="swipe-hint">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+                <span>Swipe anywhere to steer</span>
+            </div>
+        </div>
+
+        <div class="controls-hint">
+            <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+            &nbsp;·&nbsp; <kbd>P</kbd> Pause &nbsp;·&nbsp; <kbd>Space</kbd> Restart
+        </div>
+
+        <div class="speed-selector">
+            <span class="speed-label">SPEED</span>
+            <div class="speed-options">
+                <button class="speed-btn" data-speed="slow">🐢 Slow</button>
+                <button class="speed-btn active" data-speed="normal">⚡ Normal</button>
+                <button class="speed-btn" data-speed="fast">🔥 Fast</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Mobile Controls -->
-    <div class="mobile-controls" id="mobileControls">
-      <div class="dpad">
-        <button class="dpad-btn dpad-up" id="btnUp" aria-label="Move Up">
-          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 8l-6 6h12z" fill="currentColor"/></svg>
-        </button>
-        <button class="dpad-btn dpad-left" id="btnLeft" aria-label="Move Left">
-          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M8 12l6-6v12z" fill="currentColor"/></svg>
-        </button>
-        <button class="dpad-btn dpad-center" disabled></button>
-        <button class="dpad-btn dpad-right" id="btnRight" aria-label="Move Right">
-          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M16 12l-6 6V6z" fill="currentColor"/></svg>
-        </button>
-        <button class="dpad-btn dpad-down" id="btnDown" aria-label="Move Down">
-          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 16l6-6H6z" fill="currentColor"/></svg>
-        </button>
-      </div>
-    </div>
-
-    <div class="controls-hint">
-      <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
-      &nbsp;·&nbsp; <kbd>P</kbd> Pause &nbsp;·&nbsp; <kbd>Space</kbd> Restart
-    </div>
-
-    <div class="speed-selector">
-      <span class="speed-label">SPEED</span>
-      <div class="speed-options">
-        <button class="speed-btn" data-speed="slow">🐢 Slow</button>
-        <button class="speed-btn active" data-speed="normal">⚡ Normal</button>
-        <button class="speed-btn" data-speed="fast">🔥 Fast</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="game.js"></script>
+    <script src="game.js"></script>
 </body>
+
 </html>

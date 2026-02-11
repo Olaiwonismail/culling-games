@@ -211,21 +211,16 @@
         }
     });
 
-    // Mobile d-pad
-    const dpadMap = { btnUp: 'UP', btnDown: 'DOWN', btnLeft: 'LEFT', btnRight: 'RIGHT' };
-    Object.entries(dpadMap).forEach(([id, dir]) => {
-        const btn = document.getElementById(id);
-        if (btn) {
-            btn.addEventListener('touchstart', (e) => { e.preventDefault(); setDirection(dir); });
-            btn.addEventListener('click', () => setDirection(dir));
-        }
-    });
-
-    // Speed buttons
-    speedBtns.forEach((btn) => {
+    // Mobile difficulty buttons
+    const mobileDiffBtns = document.querySelectorAll('.mobile-diff-btn');
+    mobileDiffBtns.forEach((btn) => {
         btn.addEventListener('click', () => {
-            speedBtns.forEach(b => b.classList.remove('active'));
+            mobileDiffBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            // Also sync desktop speed buttons
+            speedBtns.forEach(b => b.classList.remove('active'));
+            const matching = document.querySelector(`.speed-btn[data-speed="${btn.dataset.speed}"]`);
+            if (matching) matching.classList.add('active');
             speed = btn.dataset.speed;
             if (isRunning && !isPaused) {
                 clearInterval(gameLoop);
@@ -234,27 +229,78 @@
         });
     });
 
-    // Touch swipe support
-    let touchStartX, touchStartY;
-    canvas.addEventListener('touchstart', (e) => {
+    // Speed buttons (also sync mobile)
+    speedBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            speedBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            mobileDiffBtns.forEach(b => b.classList.remove('active'));
+            const matching = document.querySelector(`.mobile-diff-btn[data-speed="${btn.dataset.speed}"]`);
+            if (matching) matching.classList.add('active');
+            speed = btn.dataset.speed;
+            if (isRunning && !isPaused) {
+                clearInterval(gameLoop);
+                gameLoop = setInterval(tick, SPEEDS[speed]);
+            }
+        });
+    });
+
+    // ---- Swipe Controls (full document, not just canvas) ----
+    const swipeIndicator = document.getElementById('swipeIndicator');
+    let touchStartX, touchStartY, touchStartTime;
+    const SWIPE_THRESHOLD = 15; // px minimum swipe distance
+    const SWIPE_MAX_TIME = 500; // ms max time for a swipe
+
+    const dirRotations = {
+        UP: 'rotate(0deg)',
+        RIGHT: 'rotate(90deg)',
+        DOWN: 'rotate(180deg)',
+        LEFT: 'rotate(270deg)',
+    };
+
+    function showSwipeIndicator(dir) {
+        if (!swipeIndicator) return;
+        swipeIndicator.style.setProperty('--swipe-rotate', dirRotations[dir]);
+        swipeIndicator.classList.remove('show');
+        void swipeIndicator.offsetWidth; // reflow to restart animation
+        swipeIndicator.classList.add('show');
+    }
+
+    document.addEventListener('touchstart', (e) => {
+        // Don't capture touches on buttons/controls
+        if (e.target.closest('.mobile-diff-btn, .play-btn, .speed-btn')) return;
         const t = e.touches[0];
         touchStartX = t.clientX;
         touchStartY = t.clientY;
+        touchStartTime = Date.now();
     }, { passive: true });
 
-    canvas.addEventListener('touchend', (e) => {
-        if (!touchStartX) return;
-        const t = e.changedTouches[0];
+    document.addEventListener('touchmove', (e) => {
+        if (!touchStartX || !isRunning || isPaused) return;
+        const t = e.touches[0];
         const dx = t.clientX - touchStartX;
         const dy = t.clientY - touchStartY;
         const absDx = Math.abs(dx);
         const absDy = Math.abs(dy);
-        if (Math.max(absDx, absDy) < 20) return;
-        if (absDx > absDy) {
-            setDirection(dx > 0 ? 'RIGHT' : 'LEFT');
-        } else {
-            setDirection(dy > 0 ? 'DOWN' : 'UP');
+
+        // Trigger direction as soon as threshold is met (more responsive)
+        if (Math.max(absDx, absDy) >= SWIPE_THRESHOLD) {
+            let dir;
+            if (absDx > absDy) {
+                dir = dx > 0 ? 'RIGHT' : 'LEFT';
+            } else {
+                dir = dy > 0 ? 'DOWN' : 'UP';
+            }
+            setDirection(dir);
+            showSwipeIndicator(dir);
+            // Reset start point for continuous swiping
+            touchStartX = t.clientX;
+            touchStartY = t.clientY;
+            e.preventDefault();
         }
+    }, { passive: false });
+
+    document.addEventListener('touchend', () => {
         touchStartX = touchStartY = null;
     }, { passive: true });
 

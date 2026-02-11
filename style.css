@@ -333,67 +333,131 @@ kbd {
   color: var(--accent);
 }
 
-/* ---- Mobile Controls ---- */
-.mobile-controls {
+/* ---- Mobile Difficulty Selector ---- */
+.mobile-section {
   display: none;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.dpad {
-  display: grid;
-  grid-template-columns: repeat(3, 56px);
-  grid-template-rows: repeat(3, 56px);
-  gap: 4px;
-  justify-content: center;
+.mobile-difficulty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 
-.dpad-btn {
+.mobile-diff-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  white-space: nowrap;
+}
+
+.mobile-diff-options {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.mobile-diff-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
+  font-family: var(--font-main);
   color: var(--text-secondary);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s, border-color 0.15s;
+  transition: all 0.25s;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
-.dpad-btn:active {
-  background: rgba(108, 92, 231, 0.2);
+.mobile-diff-btn .diff-emoji {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.mobile-diff-btn .diff-name {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.mobile-diff-btn.active {
+  background: rgba(108, 92, 231, 0.15);
   border-color: rgba(108, 92, 231, 0.4);
+  color: var(--accent);
 }
 
-.dpad-center {
-  background: transparent;
-  border-color: transparent;
-  cursor: default;
+.mobile-diff-btn:active {
+  transform: scale(0.95);
 }
 
-.dpad-up {
-  grid-column: 2;
-  grid-row: 1;
+/* ---- Swipe Hint ---- */
+.swipe-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  font-weight: 500;
 }
 
-.dpad-left {
-  grid-column: 1;
-  grid-row: 2;
+.swipe-hint svg {
+  opacity: 0.5;
 }
 
-.dpad-center {
-  grid-column: 2;
-  grid-row: 2;
+/* ---- Swipe Direction Indicator ---- */
+.swipe-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg) scale(0);
+  color: rgba(108, 92, 231, 0.5);
+  z-index: 8;
+  pointer-events: none;
+  transition: none;
+  opacity: 0;
 }
 
-.dpad-right {
-  grid-column: 3;
-  grid-row: 2;
+.swipe-indicator.show {
+  animation: swipePop 0.35s ease-out forwards;
 }
 
-.dpad-down {
-  grid-column: 2;
-  grid-row: 3;
+@keyframes swipePop {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) var(--swipe-rotate) scale(0.5);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) var(--swipe-rotate) scale(1.1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) var(--swipe-rotate) scale(1.3);
+  }
+}
+
+/* ---- Mobile overlay messages ---- */
+.mobile-msg {
+  display: none;
+}
+
+.desktop-msg {
+  display: block;
 }
 
 /* ---- Score Pop Animation ---- */
@@ -427,16 +491,28 @@ kbd {
     font-size: 1.6rem;
   }
 
-  .mobile-controls {
-    display: block;
+  .mobile-section {
+    display: flex;
   }
 
   .controls-hint {
     display: none;
   }
 
+  .speed-selector {
+    display: none;
+  }
+
   .stat-value {
     font-size: 1.1rem;
+  }
+
+  .mobile-msg {
+    display: block;
+  }
+
+  .desktop-msg {
+    display: none;
   }
 }
 
