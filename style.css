@@ -367,7 +367,7 @@ kbd {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2px solid transparent;
+  border: 2px solid rgba(255, 255, 255, 0.18);
   background: var(--swatch-color);
   cursor: pointer;
   transition: all 0.2s;
@@ -378,7 +378,7 @@ kbd {
 }
 
 .bg-swatch {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .skin-swatch:hover,

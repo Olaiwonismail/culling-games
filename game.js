@@ -35,10 +35,10 @@
     // ---- Background Presets ----
     const BACKGROUNDS = {
         dark: { name: 'Dark', bg: '#12121a', gridDot: 'rgba(255,255,255,0.06)', preview: '#12121a' },
-        midnight: { name: 'Midnight', bg: '#0d1b2a', gridDot: 'rgba(120,160,255,0.07)', preview: '#0d1b2a' },
-        forest: { name: 'Forest', bg: '#0a1a0f', gridDot: 'rgba(100,255,130,0.06)', preview: '#0a1a0f' },
-        abyss: { name: 'Abyss', bg: '#080810', gridDot: 'rgba(180,160,255,0.05)', preview: '#080810' },
-        crimson: { name: 'Crimson', bg: '#1a0a0e', gridDot: 'rgba(255,120,120,0.06)', preview: '#1a0a0e' },
+        midnight: { name: 'Midnight', bg: '#0f2340', gridDot: 'rgba(100,180,255,0.1)', preview: '#0f2340' },
+        forest: { name: 'Forest', bg: '#0d2818', gridDot: 'rgba(80,255,120,0.09)', preview: '#0d2818' },
+        void: { name: 'Void', bg: '#1a0530', gridDot: 'rgba(200,140,255,0.08)', preview: '#1a0530' },
+        crimson: { name: 'Crimson', bg: '#2a0a10', gridDot: 'rgba(255,100,100,0.09)', preview: '#2a0a10' },
     };
 
     // ---- Active Colors (mutable, updated by skin/bg selection) ----
@@ -93,11 +93,30 @@
 
     // ---- Sound System (Web Audio API) ----
     let audioCtx;
+    let audioUnlocked = false;
+
     function getAudioCtx() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
         return audioCtx;
     }
+
+    // Mobile browsers require audio context to be created/resumed inside a user gesture.
+    // Unlock audio on the very first touch or click.
+    function unlockAudio() {
+        if (audioUnlocked) return;
+        const ctx = getAudioCtx();
+        // Play a silent buffer to fully unlock
+        const buf = ctx.createBuffer(1, 1, 22050);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(0);
+        audioUnlocked = true;
+    }
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+    document.addEventListener('touchend', unlockAudio, { once: true });
+    document.addEventListener('click', unlockAudio, { once: true });
 
     const SFX = {
         // Rising sweep — game start
