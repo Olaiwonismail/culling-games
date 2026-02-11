@@ -1,5 +1,5 @@
 // ============================================
-// Snake Game – Full Game Engine
+// Snake Game – Full Game Engine (Enhanced)
 // ============================================
 
 (function () {
@@ -19,33 +19,158 @@
     const speedBtns = document.querySelectorAll('.speed-btn');
 
     // ---- Game Constants ----
-    const GRID_SIZE = 20;             // cells per row/col
+    const GRID_SIZE = 20;
     const SPEEDS = { slow: 150, normal: 100, fast: 60 };
 
     // ---- Colors ----
     const COLORS = {
         bg: '#12121a',
-        gridLine: 'rgba(255,255,255,0.02)',
+        gridDot: 'rgba(255,255,255,0.06)',
         snakeHead: '#6c5ce7',
         snakeBody: '#7c6cf0',
         snakeTail: '#9b8ff5',
-        snakeGlow: 'rgba(108,92,231,0.35)',
+        snakeGlow: 'rgba(108,92,231,0.4)',
+        trailGlow: 'rgba(108,92,231,0.08)',
         food: '#ff6b6b',
-        foodGlow: 'rgba(255,107,107,0.45)',
+        foodGlow: 'rgba(255,107,107,0.4)',
         bonus: '#feca57',
-        bonusGlow: 'rgba(254,202,87,0.45)',
+        bonusGlow: 'rgba(254,202,87,0.4)',
         eyes: '#fff',
+        eyePupil: '#2d1b69',
+    };
+
+    // ---- Sound System (Web Audio API) ----
+    let audioCtx;
+    function getAudioCtx() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+    }
+
+    const SFX = {
+        // Rising sweep — game start
+        start() {
+            const ctx = getAudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
+            osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.25);
+            gain.gain.setValueAtTime(0.18, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.35);
+
+            // Second harmonic layer
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(600, ctx.currentTime + 0.05);
+            osc2.frequency.exponentialRampToValueAtTime(1600, ctx.currentTime + 0.3);
+            gain2.gain.setValueAtTime(0.08, ctx.currentTime + 0.05);
+            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+            osc2.start(ctx.currentTime + 0.05);
+            osc2.stop(ctx.currentTime + 0.4);
+        },
+
+        // Bright coin chime — food pickup
+        pickup(isBonus) {
+            const ctx = getAudioCtx();
+            const baseFreq = isBonus ? 880 : 660;
+
+            // Main tone
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, ctx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.2);
+
+            // Second note (octave up, delayed)
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.type = 'sine';
+            const note2 = isBonus ? baseFreq * 2 : baseFreq * 1.5;
+            osc2.frequency.setValueAtTime(note2, ctx.currentTime + 0.08);
+            gain2.gain.setValueAtTime(0.12, ctx.currentTime + 0.08);
+            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc2.start(ctx.currentTime + 0.08);
+            osc2.stop(ctx.currentTime + 0.3);
+
+            // Bonus gets a third sparkle note
+            if (isBonus) {
+                const osc3 = ctx.createOscillator();
+                const gain3 = ctx.createGain();
+                osc3.connect(gain3);
+                gain3.connect(ctx.destination);
+                osc3.type = 'triangle';
+                osc3.frequency.setValueAtTime(baseFreq * 3, ctx.currentTime + 0.14);
+                gain3.gain.setValueAtTime(0.08, ctx.currentTime + 0.14);
+                gain3.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                osc3.start(ctx.currentTime + 0.14);
+                osc3.stop(ctx.currentTime + 0.4);
+            }
+        },
+
+        // Low rumble/buzz — collision/death
+        collide() {
+            const ctx = getAudioCtx();
+
+            // Noise burst via oscillator detuning
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.4);
+
+            // Sub bass hit
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(80, ctx.currentTime);
+            osc2.frequency.exponentialRampToValueAtTime(20, ctx.currentTime + 0.35);
+            gain2.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+            osc2.start(ctx.currentTime);
+            osc2.stop(ctx.currentTime + 0.45);
+        },
     };
 
     // ---- State ----
     let cellSize, snake, direction, nextDirection, food, bonusFood;
     let score, highScore, speed, gameLoop, isRunning, isPaused, isGameOver;
     let bonusTimer, particles, screenShake, eatenAnimations;
+    let animFrameId, lastTickTime, tickProgress;
+    let prevSnake; // previous snake positions for interpolation
+    let trail; // fading trail positions
 
     // ---- Init ----
     highScore = parseInt(localStorage.getItem('snakeHighScore')) || 0;
     highEl.textContent = highScore;
     speed = 'normal';
+    trail = [];
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -67,7 +192,6 @@
 
     document.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
-
         if (key === ' ' || key === 'enter') {
             e.preventDefault();
             if (isGameOver || !isRunning) startGame();
@@ -77,7 +201,6 @@
             if (isRunning && !isGameOver) togglePause();
             return;
         }
-
         const dirMap = {
             arrowup: 'UP', arrowdown: 'DOWN', arrowleft: 'LEFT', arrowright: 'RIGHT',
             w: 'UP', s: 'DOWN', a: 'LEFT', d: 'RIGHT',
@@ -126,7 +249,7 @@
         const dy = t.clientY - touchStartY;
         const absDx = Math.abs(dx);
         const absDy = Math.abs(dy);
-        if (Math.max(absDx, absDy) < 20) return; // too small
+        if (Math.max(absDx, absDy) < 20) return;
         if (absDx > absDy) {
             setDirection(dx > 0 ? 'RIGHT' : 'LEFT');
         } else {
@@ -151,6 +274,7 @@
         const startY = Math.floor(GRID_SIZE / 2);
         for (let i = 0; i < 3; i++) snake.push({ x: startX - i, y: startY });
 
+        prevSnake = snake.map(s => ({ ...s }));
         direction = 'RIGHT';
         nextDirection = 'RIGHT';
         score = 0;
@@ -159,8 +283,11 @@
         isGameOver = false;
         particles = [];
         eatenAnimations = [];
+        trail = [];
         screenShake = 0;
         bonusFood = null;
+        tickProgress = 0;
+        lastTickTime = performance.now();
         clearTimeout(bonusTimer);
 
         updateUI();
@@ -170,13 +297,22 @@
         overlay.classList.add('hidden');
         removePauseBadge();
 
+        SFX.start();
+
         clearInterval(gameLoop);
         gameLoop = setInterval(tick, SPEEDS[speed]);
+
+        // Start continuous render loop
+        cancelAnimationFrame(animFrameId);
+        renderLoop();
     }
 
-    // ---- Game Tick ----
+    // ---- Game Tick (logic only) ----
     function tick() {
         if (isPaused) return;
+
+        // Save previous positions for interpolation
+        prevSnake = snake.map(s => ({ ...s }));
 
         direction = nextDirection;
         const head = { ...snake[0] };
@@ -200,23 +336,32 @@
 
         snake.unshift(head);
 
+        // Add trail from tail before it moves
+        if (snake.length > 1) {
+            const tailPos = snake[snake.length - 1];
+            trail.push({ x: tailPos.x, y: tailPos.y, life: 1.0 });
+        }
+
         let ate = false;
-        // Food collision
         if (head.x === food.x && head.y === food.y) {
             score += 10;
             ate = true;
-            spawnParticles(food.x, food.y, COLORS.food, 8);
+            SFX.pickup(false);
+            spawnParticles(food.x, food.y, COLORS.food, 12);
+            spawnParticles(food.x, food.y, '#ff9f9f', 6);
             eatenAnimations.push({ x: food.x, y: food.y, t: 1, color: COLORS.food });
-            screenShake = 4;
+            eatenAnimations.push({ x: food.x, y: food.y, t: 1, color: 'rgba(255,255,255,0.6)', speed: 2 });
+            screenShake = 5;
             spawnFood();
-        }
-        // Bonus food
-        else if (bonusFood && head.x === bonusFood.x && head.y === bonusFood.y) {
+        } else if (bonusFood && head.x === bonusFood.x && head.y === bonusFood.y) {
             score += 30;
             ate = true;
-            spawnParticles(bonusFood.x, bonusFood.y, COLORS.bonus, 12);
+            SFX.pickup(true);
+            spawnParticles(bonusFood.x, bonusFood.y, COLORS.bonus, 16);
+            spawnParticles(bonusFood.x, bonusFood.y, '#fff', 8);
             eatenAnimations.push({ x: bonusFood.x, y: bonusFood.y, t: 1, color: COLORS.bonus });
-            screenShake = 6;
+            eatenAnimations.push({ x: bonusFood.x, y: bonusFood.y, t: 1, color: 'rgba(255,255,255,0.7)', speed: 2.5 });
+            screenShake = 8;
             bonusFood = null;
         } else {
             snake.pop();
@@ -231,138 +376,245 @@
             }
         }
 
+        lastTickTime = performance.now();
+        tickProgress = 0;
+    }
+
+    // ---- Continuous Render Loop ----
+    function renderLoop() {
+        if (!isRunning && !isGameOver) return;
+
+        // Calculate interpolation progress between ticks
+        if (!isPaused && isRunning) {
+            const elapsed = performance.now() - lastTickTime;
+            tickProgress = Math.min(elapsed / SPEEDS[speed], 1);
+        }
+
         draw();
+        animFrameId = requestAnimationFrame(renderLoop);
     }
 
     // ---- Drawing ----
     function draw() {
         const size = canvas.width / window.devicePixelRatio;
+        const now = Date.now();
         ctx.save();
 
-        // Screen shake
+        // Smooth screen shake
         if (screenShake > 0) {
-            const sx = (Math.random() - 0.5) * screenShake;
-            const sy = (Math.random() - 0.5) * screenShake;
+            const angle = Math.random() * Math.PI * 2;
+            const sx = Math.cos(angle) * screenShake;
+            const sy = Math.sin(angle) * screenShake;
             ctx.translate(sx, sy);
-            screenShake *= 0.7;
-            if (screenShake < 0.5) screenShake = 0;
+            screenShake *= 0.85;
+            if (screenShake < 0.3) screenShake = 0;
         }
 
         // Background
         ctx.fillStyle = COLORS.bg;
         ctx.fillRect(0, 0, size, size);
 
-        // Grid
-        ctx.strokeStyle = COLORS.gridLine;
-        ctx.lineWidth = 0.5;
+        // ---- Dot Grid (non-obstructive) ----
+        ctx.fillStyle = COLORS.gridDot;
         for (let i = 1; i < GRID_SIZE; i++) {
-            const pos = i * cellSize;
-            ctx.beginPath();
-            ctx.moveTo(pos, 0);
-            ctx.lineTo(pos, size);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(0, pos);
-            ctx.lineTo(size, pos);
-            ctx.stroke();
+            for (let j = 1; j < GRID_SIZE; j++) {
+                const x = i * cellSize;
+                const y = j * cellSize;
+                ctx.beginPath();
+                ctx.arc(x, y, 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
 
-        // Eaten animations (ripple)
+        // ---- Trail (fading ghost cells) ----
+        for (let i = trail.length - 1; i >= 0; i--) {
+            const t = trail[i];
+            t.life -= 0.035;
+            if (t.life <= 0) { trail.splice(i, 1); continue; }
+            const alpha = t.life * 0.15;
+            ctx.globalAlpha = alpha;
+            drawRoundedCell(t.x, t.y, COLORS.snakeTail, 0.55);
+            ctx.globalAlpha = 1;
+        }
+
+        // ---- Eaten animations (expanding ripple rings) ----
         for (let i = eatenAnimations.length - 1; i >= 0; i--) {
             const ea = eatenAnimations[i];
-            ea.t -= 0.04;
+            const spd = ea.speed || 1;
+            ea.t -= 0.025 * spd;
             if (ea.t <= 0) { eatenAnimations.splice(i, 1); continue; }
             const cx = ea.x * cellSize + cellSize / 2;
             const cy = ea.y * cellSize + cellSize / 2;
-            const radius = cellSize * (1 - ea.t) * 1.5;
+            const radius = cellSize * (1 - ea.t) * 2;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.strokeStyle = ea.color;
-            ctx.globalAlpha = ea.t * 0.5;
-            ctx.lineWidth = 2;
+            ctx.globalAlpha = ea.t * 0.6;
+            ctx.lineWidth = 1.5 * ea.t;
             ctx.stroke();
             ctx.globalAlpha = 1;
         }
 
-        // Food glow
-        drawGlow(food.x, food.y, COLORS.foodGlow, cellSize * 1.8);
+        // ---- Food ----
+        const foodPulse = Math.sin(now / 400) * 0.06;
+        const foodBob = Math.sin(now / 500) * cellSize * 0.04;
+        const foodSize = 0.6 + foodPulse;
 
-        // Food
-        drawRoundedCell(food.x, food.y, COLORS.food, 0.7);
+        // Soft outer glow
+        drawGlow(food.x, food.y, COLORS.foodGlow, cellSize * (2 + foodPulse * 3));
 
-        // Bonus food
+        // Food body with bob
+        ctx.save();
+        ctx.translate(0, foodBob);
+        drawRoundedCell(food.x, food.y, COLORS.food, foodSize);
+        // Inner highlight
+        const fCx = food.x * cellSize + cellSize / 2;
+        const fCy = food.y * cellSize + cellSize / 2;
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = '#ffaaaa';
+        ctx.beginPath();
+        ctx.arc(fCx - cellSize * 0.08, fCy - cellSize * 0.1, cellSize * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+
+        // ---- Bonus food ----
         if (bonusFood) {
-            drawGlow(bonusFood.x, bonusFood.y, COLORS.bonusGlow, cellSize * 2.2);
-            const pulse = 0.65 + Math.sin(Date.now() / 200) * 0.08;
-            drawRoundedCell(bonusFood.x, bonusFood.y, COLORS.bonus, pulse);
-            // star shape indicator
+            const bPulse = Math.sin(now / 250) * 0.08;
+            const bBob = Math.sin(now / 350) * cellSize * 0.06;
+            const bRotate = now / 800;
+
+            drawGlow(bonusFood.x, bonusFood.y, COLORS.bonusGlow, cellSize * (2.5 + bPulse * 4));
+
+            ctx.save();
+            ctx.translate(0, bBob);
+            drawRoundedCell(bonusFood.x, bonusFood.y, COLORS.bonus, 0.6 + bPulse);
+
+            // Rotating star
             const bcx = bonusFood.x * cellSize + cellSize / 2;
             const bcy = bonusFood.y * cellSize + cellSize / 2;
+            ctx.save();
+            ctx.translate(bcx, bcy);
+            ctx.rotate(bRotate);
             ctx.fillStyle = '#fff';
-            ctx.font = `${cellSize * 0.5}px Inter`;
+            ctx.font = `${cellSize * 0.4}px Inter`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('★', bcx, bcy);
+            ctx.fillText('★', 0, 0);
+            ctx.restore();
+            ctx.restore();
         }
 
-        // Snake body (from tail to head)
+        // ---- Snake ----
+        // Draw from tail to head with interpolation
+        const interpT = easeOutQuad(tickProgress);
+
         for (let i = snake.length - 1; i >= 0; i--) {
             const seg = snake[i];
+            const prev = prevSnake[i] || seg;
+
+            // Interpolated position
+            const ix = prev.x + (seg.x - prev.x) * interpT;
+            const iy = prev.y + (seg.y - prev.y) * interpT;
+
+            // Gradient color from tail to head
             const t = i / Math.max(snake.length - 1, 1);
             const color = lerpColor(COLORS.snakeTail, COLORS.snakeHead, 1 - t);
-            const padding = i === 0 ? 0.75 : 0.68;
-            drawRoundedCell(seg.x, seg.y, color, padding);
+
+            // Size: head is slightly bigger, tail tapers
+            const sizeFactor = i === 0 ? 0.78 : (0.72 - t * 0.08);
+
+            // Subtle shadow under each segment
+            ctx.globalAlpha = 0.12;
+            ctx.fillStyle = '#000';
+            drawRoundedCellAt(ix * cellSize + 1.5, iy * cellSize + 1.5, cellSize, color, sizeFactor);
+            ctx.globalAlpha = 1;
+
+            // Actual segment
+            drawRoundedCellAt(ix * cellSize, iy * cellSize, cellSize, color, sizeFactor);
+
+            // Segment connector (fill gaps between segments)
+            if (i < snake.length - 1) {
+                const next = snake[i + 1];
+                const prevNext = prevSnake[i + 1] || next;
+                const nx = prevNext.x + (next.x - prevNext.x) * interpT;
+                const ny = prevNext.y + (next.y - prevNext.y) * interpT;
+
+                const midX = (ix + nx) / 2;
+                const midY = (iy + ny) / 2;
+                const connSize = sizeFactor * 0.55;
+                ctx.fillStyle = color;
+                const cpad = cellSize * (1 - connSize) / 2;
+                ctx.fillRect(midX * cellSize + cpad, midY * cellSize + cpad, cellSize * connSize, cellSize * connSize);
+            }
         }
 
-        // Snake head glow
-        drawGlow(snake[0].x, snake[0].y, COLORS.snakeGlow, cellSize * 1.5);
+        // Snake head glow (interpolated)
+        const headPrev = prevSnake[0] || snake[0];
+        const headIx = headPrev.x + (snake[0].x - headPrev.x) * interpT;
+        const headIy = headPrev.y + (snake[0].y - headPrev.y) * interpT;
+        drawGlowAt(headIx * cellSize + cellSize / 2, headIy * cellSize + cellSize / 2, COLORS.snakeGlow, cellSize * 1.6);
 
-        // Eyes on head
-        drawEyes(snake[0]);
+        // Eyes on head (interpolated)
+        drawEyesAt(headIx, headIy);
 
-        // Particles
+        // ---- Particles ----
         for (let i = particles.length - 1; i >= 0; i--) {
             const p = particles[i];
             p.x += p.vx;
             p.y += p.vy;
-            p.life -= 0.03;
-            p.vy += 0.08; // gravity
+            p.life -= 0.02;
+            p.vy += 0.06; // softer gravity
+            p.vx *= 0.98; // air resistance
             if (p.life <= 0) { particles.splice(i, 1); continue; }
-            ctx.globalAlpha = p.life;
+
+            ctx.globalAlpha = p.life * p.life; // quadratic fade for smoother look
             ctx.fillStyle = p.color;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-            ctx.fill();
+
+            if (p.shape === 'square') {
+                const s = p.size * p.life;
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation + p.life * 4);
+                ctx.fillRect(-s / 2, -s / 2, s, s);
+                ctx.restore();
+            } else {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
             ctx.globalAlpha = 1;
         }
 
         ctx.restore();
-
-        // Continue animating particles even between ticks
-        if (particles.length || eatenAnimations.length || screenShake > 0) {
-            requestAnimationFrame(draw);
-        }
     }
 
     function drawStaticGrid() {
         const size = canvas.width / window.devicePixelRatio;
         ctx.fillStyle = COLORS.bg;
         ctx.fillRect(0, 0, size, size);
-        ctx.strokeStyle = COLORS.gridLine;
-        ctx.lineWidth = 0.5;
+        ctx.fillStyle = COLORS.gridDot;
         for (let i = 1; i < GRID_SIZE; i++) {
-            const pos = i * cellSize;
-            ctx.beginPath(); ctx.moveTo(pos, 0); ctx.lineTo(pos, size); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, pos); ctx.lineTo(size, pos); ctx.stroke();
+            for (let j = 1; j < GRID_SIZE; j++) {
+                ctx.beginPath();
+                ctx.arc(i * cellSize, j * cellSize, 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
     }
 
+    // Draw rounded cell at grid coordinates
     function drawRoundedCell(gx, gy, color, sizeFactor) {
-        const pad = cellSize * (1 - sizeFactor) / 2;
-        const x = gx * cellSize + pad;
-        const y = gy * cellSize + pad;
-        const s = cellSize * sizeFactor;
-        const r = s * 0.3;
+        drawRoundedCellAt(gx * cellSize, gy * cellSize, cellSize, color, sizeFactor);
+    }
+
+    // Draw rounded cell at pixel coordinates
+    function drawRoundedCellAt(px, py, cs, color, sizeFactor) {
+        const pad = cs * (1 - sizeFactor) / 2;
+        const x = px + pad;
+        const y = py + pad;
+        const s = cs * sizeFactor;
+        const r = s * 0.35;
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.moveTo(x + r, y);
@@ -379,8 +631,10 @@
     }
 
     function drawGlow(gx, gy, color, radius) {
-        const cx = gx * cellSize + cellSize / 2;
-        const cy = gy * cellSize + cellSize / 2;
+        drawGlowAt(gx * cellSize + cellSize / 2, gy * cellSize + cellSize / 2, color, radius);
+    }
+
+    function drawGlowAt(cx, cy, color, radius) {
         const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
         grad.addColorStop(0, color);
         grad.addColorStop(1, 'transparent');
@@ -388,10 +642,11 @@
         ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
     }
 
-    function drawEyes(head) {
-        const cx = head.x * cellSize + cellSize / 2;
-        const cy = head.y * cellSize + cellSize / 2;
-        const eyeR = cellSize * 0.1;
+    function drawEyesAt(gx, gy) {
+        const cx = gx * cellSize + cellSize / 2;
+        const cy = gy * cellSize + cellSize / 2;
+        const eyeR = cellSize * 0.11;
+        const pupilR = cellSize * 0.055;
         const offset = cellSize * 0.18;
         let e1, e2;
         switch (direction) {
@@ -412,9 +667,14 @@
                 e2 = { x: cx + offset, y: cy + offset };
                 break;
         }
+        // White of eye
         ctx.fillStyle = COLORS.eyes;
         ctx.beginPath(); ctx.arc(e1.x, e1.y, eyeR, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(e2.x, e2.y, eyeR, 0, Math.PI * 2); ctx.fill();
+        // Pupils
+        ctx.fillStyle = COLORS.eyePupil;
+        ctx.beginPath(); ctx.arc(e1.x, e1.y, pupilR, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e2.x, e2.y, pupilR, 0, Math.PI * 2); ctx.fill();
     }
 
     // ---- Particles ----
@@ -423,14 +683,17 @@
         const cy = gy * cellSize + cellSize / 2;
         for (let i = 0; i < count; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const speed = 1 + Math.random() * 3;
+            const spd = 1.5 + Math.random() * 3.5;
+            const shape = Math.random() > 0.5 ? 'circle' : 'square';
             particles.push({
                 x: cx, y: cy,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed - 1,
-                size: 2 + Math.random() * 3,
+                vx: Math.cos(angle) * spd,
+                vy: Math.sin(angle) * spd - 1.5,
+                size: 1.5 + Math.random() * 3,
                 life: 1,
                 color,
+                shape,
+                rotation: Math.random() * Math.PI * 2,
             });
         }
     }
@@ -452,9 +715,7 @@
                 pos = { x: rand(GRID_SIZE), y: rand(GRID_SIZE) };
             } while (isOccupied(pos) || (food.x === pos.x && food.y === pos.y));
             bonusFood = pos;
-            // Remove bonus after 5 seconds
-            setTimeout(() => { bonusFood = null; if (isRunning) draw(); }, 5000);
-            // Schedule next
+            setTimeout(() => { bonusFood = null; }, 5000);
             scheduleBonusFood();
         }, 10000 + Math.random() * 10000);
     }
@@ -470,6 +731,7 @@
             showPauseBadge();
         } else {
             removePauseBadge();
+            lastTickTime = performance.now(); // reset interpolation
         }
     }
 
@@ -496,17 +758,21 @@
         clearInterval(gameLoop);
         clearTimeout(bonusTimer);
 
-        // Flash effect
-        screenShake = 10;
-        draw();
+        // Death burst particles from head
+        SFX.collide();
+        spawnParticles(snake[0].x, snake[0].y, '#ff4757', 20);
+        spawnParticles(snake[0].x, snake[0].y, '#fff', 10);
+        screenShake = 12;
 
+        // Keep rendering for death animation
         setTimeout(() => {
+            cancelAnimationFrame(animFrameId);
             overlayIcon.textContent = '💀';
             overlayTitle.textContent = 'Game Over';
             overlayMessage.textContent = `Score: ${score} · Length: ${snake.length}`;
             playBtn.querySelector('span').textContent = 'PLAY AGAIN';
             overlay.classList.remove('hidden');
-        }, 400);
+        }, 600);
     }
 
     // ---- UI ----
@@ -518,13 +784,17 @@
     function animateValue(el, value) {
         el.textContent = value;
         el.classList.remove('pop');
-        void el.offsetWidth; // reflow
+        void el.offsetWidth;
         el.classList.add('pop');
     }
 
     // ---- Helpers ----
     function rand(max) {
         return Math.floor(Math.random() * max);
+    }
+
+    function easeOutQuad(t) {
+        return t * (2 - t);
     }
 
     function lerpColor(a, b, t) {
