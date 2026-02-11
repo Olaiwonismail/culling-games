@@ -333,6 +333,71 @@ kbd {
   color: var(--accent);
 }
 
+/* ---- Customization Bar ---- */
+.customize-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.customize-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.customize-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  white-space: nowrap;
+}
+
+.swatch-row {
+  display: flex;
+  gap: 5px;
+}
+
+.skin-swatch,
+.bg-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--swatch-color);
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+.bg-swatch {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.skin-swatch:hover,
+.bg-swatch:hover {
+  transform: scale(1.2);
+}
+
+.skin-swatch.active,
+.bg-swatch.active {
+  border-color: #fff;
+  box-shadow: 0 0 8px var(--swatch-color), 0 0 2px rgba(255, 255, 255, 0.5);
+  transform: scale(1.15);
+}
+
+.skin-swatch:active,
+.bg-swatch:active {
+  transform: scale(0.95);
+}
+
 /* ---- Mobile Difficulty Selector ---- */
 .mobile-section {
   display: none;
@@ -505,6 +570,16 @@ kbd {
 
   .stat-value {
     font-size: 1.1rem;
+  }
+
+  .customize-bar {
+    gap: 12px;
+  }
+
+  .skin-swatch,
+  .bg-swatch {
+    width: 26px;
+    height: 26px;
   }
 
   .mobile-msg {

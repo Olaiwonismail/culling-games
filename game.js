@@ -22,7 +22,26 @@
     const GRID_SIZE = 20;
     const SPEEDS = { slow: 150, normal: 100, fast: 60 };
 
-    // ---- Colors ----
+    // ---- Skin Presets ----
+    const SKINS = {
+        classic: { name: 'Classic', head: '#6c5ce7', body: '#7c6cf0', tail: '#9b8ff5', glow: 'rgba(108,92,231,0.4)', trail: 'rgba(108,92,231,0.08)', eyes: '#fff', pupil: '#2d1b69', preview: '#6c5ce7' },
+        neon: { name: 'Neon', head: '#00ff88', body: '#00e67a', tail: '#00cc6c', glow: 'rgba(0,255,136,0.4)', trail: 'rgba(0,255,136,0.08)', eyes: '#fff', pupil: '#003d20', preview: '#00ff88' },
+        fire: { name: 'Fire', head: '#ff4500', body: '#ff6a33', tail: '#ff8c5a', glow: 'rgba(255,69,0,0.4)', trail: 'rgba(255,69,0,0.08)', eyes: '#fff', pupil: '#4a0e00', preview: '#ff4500' },
+        ocean: { name: 'Ocean', head: '#0984e3', body: '#3da0e8', tail: '#74b9f0', glow: 'rgba(9,132,227,0.4)', trail: 'rgba(9,132,227,0.08)', eyes: '#fff', pupil: '#022b52', preview: '#0984e3' },
+        gold: { name: 'Gold', head: '#f9a825', body: '#fbc02d', tail: '#fdd835', glow: 'rgba(249,168,37,0.4)', trail: 'rgba(249,168,37,0.08)', eyes: '#fff', pupil: '#5c3d00', preview: '#f9a825' },
+        cyber: { name: 'Cyber', head: '#e84393', body: '#fd79a8', tail: '#fab1c8', glow: 'rgba(232,67,147,0.4)', trail: 'rgba(232,67,147,0.08)', eyes: '#fff', pupil: '#4a0e2b', preview: '#e84393' },
+    };
+
+    // ---- Background Presets ----
+    const BACKGROUNDS = {
+        dark: { name: 'Dark', bg: '#12121a', gridDot: 'rgba(255,255,255,0.06)', preview: '#12121a' },
+        midnight: { name: 'Midnight', bg: '#0d1b2a', gridDot: 'rgba(120,160,255,0.07)', preview: '#0d1b2a' },
+        forest: { name: 'Forest', bg: '#0a1a0f', gridDot: 'rgba(100,255,130,0.06)', preview: '#0a1a0f' },
+        abyss: { name: 'Abyss', bg: '#080810', gridDot: 'rgba(180,160,255,0.05)', preview: '#080810' },
+        crimson: { name: 'Crimson', bg: '#1a0a0e', gridDot: 'rgba(255,120,120,0.06)', preview: '#1a0a0e' },
+    };
+
+    // ---- Active Colors (mutable, updated by skin/bg selection) ----
     const COLORS = {
         bg: '#12121a',
         gridDot: 'rgba(255,255,255,0.06)',
@@ -38,6 +57,39 @@
         eyes: '#fff',
         eyePupil: '#2d1b69',
     };
+
+    let currentSkin = localStorage.getItem('snakeSkin') || 'classic';
+    let currentBg = localStorage.getItem('snakeBg') || 'dark';
+
+    function applySkin(id) {
+        const skin = SKINS[id];
+        if (!skin) return;
+        currentSkin = id;
+        COLORS.snakeHead = skin.head;
+        COLORS.snakeBody = skin.body;
+        COLORS.snakeTail = skin.tail;
+        COLORS.snakeGlow = skin.glow;
+        COLORS.trailGlow = skin.trail;
+        COLORS.eyes = skin.eyes;
+        COLORS.eyePupil = skin.pupil;
+        localStorage.setItem('snakeSkin', id);
+        // Update swatch UI
+        document.querySelectorAll('.skin-swatch').forEach(s => s.classList.toggle('active', s.dataset.skin === id));
+    }
+
+    function applyBackground(id) {
+        const bg = BACKGROUNDS[id];
+        if (!bg) return;
+        currentBg = id;
+        COLORS.bg = bg.bg;
+        COLORS.gridDot = bg.gridDot;
+        localStorage.setItem('snakeBg', id);
+        document.querySelectorAll('.bg-swatch').forEach(s => s.classList.toggle('active', s.dataset.bg === id));
+    }
+
+    // Apply saved skin/bg on load
+    applySkin(currentSkin);
+    applyBackground(currentBg);
 
     // ---- Sound System (Web Audio API) ----
     let audioCtx;
@@ -242,6 +294,20 @@
                 clearInterval(gameLoop);
                 gameLoop = setInterval(tick, SPEEDS[speed]);
             }
+        });
+    });
+
+    // Skin/Background swatch listeners
+    document.querySelectorAll('.skin-swatch').forEach(s => {
+        s.addEventListener('click', () => {
+            applySkin(s.dataset.skin);
+            if (!isRunning) drawStaticGrid();
+        });
+    });
+    document.querySelectorAll('.bg-swatch').forEach(s => {
+        s.addEventListener('click', () => {
+            applyBackground(s.dataset.bg);
+            if (!isRunning) drawStaticGrid();
         });
     });
 
