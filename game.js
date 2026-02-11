@@ -52,9 +52,11 @@
 
     function resizeCanvas() {
         const container = canvas.parentElement;
-        const size = container.clientWidth;
+        const size = Math.min(container.clientWidth, container.clientHeight);
         canvas.width = size * window.devicePixelRatio;
         canvas.height = size * window.devicePixelRatio;
+        canvas.style.width = size + 'px';
+        canvas.style.height = size + 'px';
         ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
         cellSize = size / GRID_SIZE;
         if (!isRunning) drawStaticGrid();
